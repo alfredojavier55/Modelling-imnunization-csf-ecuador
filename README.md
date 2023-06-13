@@ -2,20 +2,21 @@
 This repository contains the code used in the manuscript "Modelling immunization strategies against Classical swine fever in Ecuador" by Acosta et al. The model is written using R language (version 4.2.3).
 
 ### Descriptive epidemiology (Descriptive)
-The model used oficial information
+The model used oficial information not able to make public.
+Reports are available on the link and the RMD files
 
 ### Contact and death rates (Contact-death)
-The code for a model that uses pre-generated 
+Code to calculate de beta and gamma epidemic of 2015
 
 ### Modelling simulation 2014-2022 (Sim14-22)
-events is available in model-premade-events.R
-
+Simulation using the coverage dynamics (montly basis)
+the modell is runing with the number of animals as init.cond
 
 ### Model simulation 2022-2031 (Sim22-32)
-
+Simulation of future population dynamics
 
 ### Sensibility analysis (Sensibility)
-
+We used the 2014-2022 model to fix parameters and obtain 100 simulations of Monte Carlo simulation, then PRCC
 
 ### Authors
 [![orcid](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png)](https://orcid.org/0000-0002-9160-7355) Fernando Ferreira,
