@@ -1,5 +1,5 @@
 ###### 2014-2022 S-I-PI-V Simulation ######----
-###### 2014-20 S-I-PI-V Simulation ######----
+###### 2014-20 S-I-P-V Simulation ######----
 
 library(zoo); library(deSolve); library(ggplot2); library(lubridate); library(dplyr)
 # Diretorio de trabalho
@@ -13,7 +13,7 @@ tau <- gama/30 #
 mu <- (1/(350/30))
 R0 <- beta/gama
 w <- 1/(180/30) #omega
-theta <- 0.9
+theta <- 0.1
 
 # About tau Persisten infected parameter 
 # 1/(gama/30)
@@ -57,12 +57,11 @@ mean(vc); summary(vc)
 # vaccine coverage function by years  ----
 c <- vc
 # cf coverage function
-fp <- function(t){
-  {fp <- c[t]}
-  return(fp)
+fc <- function(t){
+  c[t]
 }
 
-fp(120) #testing
+fc(120) #testing
 
 # Parametros ----
 par.SIRVsd <- c(beta = beta, gama = gama, mu = mu, w = w, theta = theta, tau = tau)
@@ -83,7 +82,7 @@ sus <- pop-vac-r
 vac+sus+r-pop
 
 #  Set intial vector
-init.sd <- c(S=sus, I=infe, PI=p_infe, V=vac, R=r)                      
+init.sd <- c(S=sus, I=infe, P=p_infe, V=vac, R=r)                      
 
 # Deterministic modell  ----
 # Calling function
@@ -96,13 +95,13 @@ SIRVsd <- function(t, state, parameters){
   with(as.list(c(state, parameters)),{
     
     # rate of change
-    dV = (fp(t))*mu*(S+I+PI+V+R) - w*V - mu*V
-    dS = (1-(fp(t)))*mu*(S+I+PI+V+R) - (beta*S*I)/(S+I+PI+V) + w*V - mu*S
-    dI = (beta*S*I)/(S+I+PI+V+R) - gama*I*theta - gama*I*(1-theta) - mu*I
-    dPI= gama*I*(1-theta) - tau*PI - mu*PI
-    dR= gama*I*theta + tau*PI - mu*R
+    dV = (fc(t))*mu*(S+I+P+V+R) - w*V - mu*V
+    dS = (1-(fc(t)))*mu*(S+I+P+V+R) - (beta*S*I)/(S+I+P+V) + w*V - mu*S
+    dI = (beta*S*I)/(S+I+P+V+R) - gama*I*theta - gama*I*(1-theta) - mu*I
+    dP= gama*I*(1-theta) - tau*P - mu*P
+    dR= gama*I*theta + tau*P - mu*R
     # return the output of the model
-    return(list(c(dS, dI, dPI, dV, dR)))
+    return(list(c(dS, dI, dP, dV, dR)))
   })
 }
 
@@ -111,13 +110,13 @@ times <- seq(1, tf, by=Dt)
 # Simulation ----
 modSIRVsd <- ode(y = init.sd, times = times, func = SIRVsd, parms = par.SIRVsd, method = "ode45")
 modSIRVsd <- as.data.frame(modSIRVsd)
-modSIRVsd$N <- (modSIRVsd$S + modSIRVsd$I + modSIRVsd$PI + modSIRVsd$V + modSIRVsd$R)
+modSIRVsd$N <- (modSIRVsd$S + modSIRVsd$I + modSIRVsd$P + modSIRVsd$V + modSIRVsd$R)
 modSIRVsd$month <- ymd("2022-01-01")+ months(1:120)
 modSIRVsd$I[modSIRVsd$I <=1 ] <- 0
-modSIRVsd$PI[modSIRVsd$PI <=1 ] <- 0
-modSIRVsd$infected <- (modSIRVsd$I + modSIRVsd$PI)
+modSIRVsd$P[modSIRVsd$P <=1 ] <- 0
+modSIRVsd$infected <- (modSIRVsd$I + modSIRVsd$P)
 modSIRVsd$I[modSIRVsd$I <=1 ] <- NA
-modSIRVsd$PI[modSIRVsd$PI <=1 ] <- NA
+modSIRVsd$P[modSIRVsd$P <=1 ] <- NA
 
 
 # Calculating the prevalence 
@@ -131,47 +130,47 @@ modSIRVsd %>%
   summarise(total.infected=mean(infected))
 
 table(!is.na(modSIRVsd$I))
-table(!is.na(modSIRVsd$PI))
+table(!is.na(modSIRVsd$P))
 
 modSIRVsd$month[which.min(modSIRVsd$I)]
-modSIRVsd$month[which.min(modSIRVsd$PI)]
+modSIRVsd$month[which.min(modSIRVsd$P)]
 
 # Creating a df with all simulation results
 # modresults <- data.frame(modSIRVsd$month)
 # modresults$I95 <- modSIRVsd$I
-# modresults$PI95 <- modSIRVsd$PI
+# modresults$P95 <- modSIRVsd$P
  
 # modresults$I90 <- modSIRVsd$I
-# modresults$PI90 <- modSIRVsd$PI
+# modresults$P90 <- modSIRVsd$P
 
 modresults$I85 <- modSIRVsd$I
-modresults$PI85 <- modSIRVsd$PI
+modresults$P85 <- modSIRVsd$P
 
 modresults$I80 <- modSIRVsd$I
-modresults$PI80 <- modSIRVsd$PI
+modresults$P80 <- modSIRVsd$P
 
 modresults$I75 <- modSIRVsd$I
-modresults$PI75 <- modSIRVsd$PI
+modresults$P75 <- modSIRVsd$P
 
 modresults$I70 <- modSIRVsd$I
-modresults$PI70 <- modSIRVsd$PI
+modresults$P70 <- modSIRVsd$P
 
 
 modresults$x <- modSIRVsd$I
-modresults$PIx <- modSIRVsd$PI
+modresults$Px <- modSIRVsd$P
 
 # Montly mean of animals by status I or IP
 mean(modresults$I95[1:4])
-mean(modresults$PI95[1:35])
+mean(modresults$P95[1:35])
 
 mean(modresults$I85[1:5])
-mean(modresults$PI85[1:35])
+mean(modresults$P85[1:35])
 
 mean(modresults$I80)
-mean(modresults$PI80)
+mean(modresults$P80)
 
 mean(modresults$I75)
-mean(modresults$PI75)
+mean(modresults$P75)
 
 
 # Simulation Dynamics
@@ -196,12 +195,12 @@ dynamics")+
 
 # Mutating names
 df <- df %>% 
-  mutate(simulation=ifelse(variable == "I95" | variable == "PI95","90-95%",NA)) %>% 
-  mutate(simulation=ifelse(variable == "I90" | variable == "PI90","90-95%",simulation)) %>% 
-  mutate(simulation=ifelse(variable == "I85" | variable == "PI85","85%",simulation)) %>% 
-  mutate(simulation=ifelse(variable == "I80" | variable == "PI80","80%",simulation)) %>% 
-  mutate(simulation=ifelse(variable == "I75" | variable == "PI75","75%",simulation)) %>% 
-  mutate(simulation=ifelse(variable == "I70" | variable == "PI70","70%",simulation))
+  mutate(simulation=ifelse(variable == "I95" | variable == "P95","90-95%",NA)) %>% 
+  mutate(simulation=ifelse(variable == "I90" | variable == "P90","90-95%",simulation)) %>% 
+  mutate(simulation=ifelse(variable == "I85" | variable == "P85","85%",simulation)) %>% 
+  mutate(simulation=ifelse(variable == "I80" | variable == "P80","80%",simulation)) %>% 
+  mutate(simulation=ifelse(variable == "I75" | variable == "P75","75%",simulation)) %>% 
+  mutate(simulation=ifelse(variable == "I70" | variable == "P70","70%",simulation))
 
 table(df$simulation)
 
@@ -277,7 +276,7 @@ tiff(filename="Fig_infectados.1.tif", width=260, height=180, pointsize=12,
 
 ggplot(modSIRVsd)+ 
   geom_line(aes(ymd(month), I, colour="Infected"), size=1)+ 
-  geom_line(aes(ymd(month), PI, colour="P Infected"), size=1)+
+  geom_line(aes(ymd(month), P, colour="P Infected"), size=1)+
   geom_line(aes(ymd(month), afectados))+
   ylim(0, 10000)+
   ylab('Population')+
@@ -338,11 +337,11 @@ max(modSIRVsd$I) #qual e o valor menor
 
 
 # Persistent infected
-which.max(modSIRVsd$PI) #onde e o tempo t do valor menor
-max(modSIRVsd$PI) #qual e o valor menor
+which.max(modSIRVsd$P) #onde e o tempo t do valor menor
+max(modSIRVsd$P) #qual e o valor menor
 
-which.max(modSIRVsd$PI) #onde e o tempo t do valor menor
-max(modSIRVsd$PI) #qual e o valor menor
+which.max(modSIRVsd$P) #onde e o tempo t do valor menor
+max(modSIRVsd$P) #qual e o valor menor
 
 # # Second epidemic curve
 # I= 210 at 1294
@@ -353,12 +352,12 @@ summary(modSIRVsd$I)
 # Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
 # 24.37    61.65   205.35  7648.41  4204.48 67475.05 
 
-summary(modSIRVsd$PI)
+summary(modSIRVsd$P)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 0.0   397.5  2394.3 16585.7 22885.7 84589.7
 
 ##########
-boxplot(modSIRVsd$I, modSIRVsd$PI)
+boxplot(modSIRVsd$I, modSIRVsd$P)
 
 ###########################################
 #Surveillance system Sensitivity analysis 
@@ -370,12 +369,12 @@ summary(modSIRVsd$I[1:365])
 # 770    8553   21073   27853   47308   67475 
 
 # Persistent infected
-summary(modSIRVsd$PI[1:365])
+summary(modSIRVsd$P[1:365])
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 0    7140   53948   43959   74705   84590 
 
 27853 + 43959
-71812 # suppose is the I+PI animals number
+71812 # suppose is the I+P animals number
 
 770/71812 #  1,07% System sensitivity
 
@@ -389,7 +388,7 @@ summary(modSIRVsd$I[1095:1395])
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 108.4   174.4   201.8   187.5   207.9   210.1 
 
-summary(modSIRVsd$PI[1095:1395])
+summary(modSIRVsd$P[1095:1395])
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 254.4   286.0   350.9   343.3   400.1   420.8 
 
@@ -418,13 +417,13 @@ tiff(filename="0_SIRV_SIRVip_2014-2017_OIE_B&W.tif", width=200, height=180, poin
 plot(modSIRVsd$time, modSIRVsd$S, col="grey", lty= 1, lwd=2.5, type="l", 
      ylim=c(0,560000), xlab="Time (days)", ylab = "Population")
 lines(modSIRVsd$time, modSIRVsd$I, col="black", lty= 1, lwd=3.5)
-lines(modSIRVsd$time, modSIRVsd$PI, col="grey", lty= 1, lwd=2.5)
+lines(modSIRVsd$time, modSIRVsd$P, col="grey", lty= 1, lwd=2.5)
 lines(modSIRVsd$time, modSIRVsd$R, col="black", lty= 3, lwd=3.5)
 lines(modSIRVsd$time, modSIRVsd$V, col="grey", lty= 8, lwd=3.5)
 # lines(modSIRVsd$time, modSIRVsd$N, col="black")
 title(main = "SIRV CSFV 2014 - 2017 in Ecuador", sub = "Vaccine coverage simulation")
 grid (NULL,NULL, lty = 3, col = "cornsilk2")
-# legend("topright", legend=c("S"," I","pI","R","V"), lty=1, cex=0.95, col=c("blue","red", "pink", "green","grey"))
+# legend("topright", legend=c("S"," I","P","R","V"), lty=1, cex=0.95, col=c("blue","red", "pink", "green","grey"))
 
 dev.off()
 
