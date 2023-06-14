@@ -1,14 +1,14 @@
 ###### 2014-2022 S-I-PI-V Simulation ######----
+# Set working directory
+setwd("~/Dropbox/0.USP/7.Publicações/Mathematical modelling CSFV/Analise/")
 
+# Dependencies
 library(deSolve)
 library(ggplot2)
 library(lubridate)
 library(dplyr)
 library(zoo)
 library(readr)
-
-# Diretorio de trabalho
-setwd("~/Dropbox/0.USP/7.Publicações/Mathematical modelling CSFV/Analise/")
 
 # Vaccine coverage by months
 coverage <- read.csv(file = "cobertura_vac_2017_21.csv")
@@ -194,17 +194,26 @@ afected2014 <- Fig25 %>%
   dplyr::summarise(afectados = (sum(V2, na.rm = TRUE)))
 
 # Reading the affected
-afec <- read_csv("afectados.2014-2023.csv")
-afected <- rbind(afected2014[1:7, ], afec[, c(2, 3)])
+afec <- read.csv(file="afectados.2014-2023.csv") %>% select(-1)
+afected <- rbind(afected2014[1:7, ], afec)
 plot(afected$Month, afected$afectados)
 
+# Simulation
 # Parametros - taxas  ###----
+
+# library
+library(ggplot2)
+library(lubridate)
+
+# Palette 
+cbPalette <- c("red", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")
+
 # Taxas em meses ----
 beta <- 4.0706 # Calculated nls montly
 gama <- 2.7941 # Calculated nls montly
 mu <- (1 / (350 / 30)) # natural death rate
 w <- 1 / (180 / 30) # omega loss of vaccine induced inmunity
-theta <- 0.9 # percentage of animals persistent infected
+theta <- 0.1 # percentage of animals persistent infected
 tau <- gama / 30 # death rate of persistent infected
 R0 <- beta / gama
 
@@ -222,18 +231,15 @@ R0 <- beta / gama
 
 
 # About the prevalence
-
 # Coverage ----
 c <- coverage$vac_cov
-# cf coverage function
-fp <- function(t) {
-  {
-    fp <- c[t]
-  }
-  return(fp)
+
+# fc coverage function
+fc <- function(t) {
+    c[t]
 }
 
-fp(105) # testing
+fc(108) # testing
 
 # Parametros ----
 par.SIRVsd <- c(beta = beta, gama = gama, mu = mu, w = w, theta = theta, tau = tau)
@@ -262,7 +268,7 @@ infe + p.i + r + vac + sus - pop
 12 * (infe + p.i) / pop # 0.098
 
 #  Set intial vector
-init.sd <- c(S = sus, I = infe, PI = p.i, V = vac, R = r)
+init.sd <- c(S = sus, I = infe, P = p.i, V = vac, R = r)
 (infe + p.i) / pop * 100
 
 # Deterministic modell  ----
@@ -276,13 +282,13 @@ tf <- 12 * 9 # Final time 2014-2022
 SIRVsd <- function(t, state, parameters) {
   with(as.list(c(state, parameters)), {
     # rate of change
-    dV <- (fp(t)) * mu * (S + I + PI + V + R) - w * V - mu * V
-    dS <- (1 - (fp(t))) * mu * (S + I + PI + V + R) - (beta * S * I) / (S + I + PI + V) + w * V - mu * S
-    dI <- (beta * S * I) / (S + I + PI + V + R) - gama * I * theta - gama * I * (1 - theta) - mu * I
-    dPI <- gama * I * (1 - theta) - tau * PI - mu * PI
-    dR <- gama * I * theta + tau * PI - mu * R
+    dV <- (fc(t)) * mu * (S + I + P + V + R) - w * V - mu * V
+    dS <- (1 - (fc(t))) * mu * (S + I + P + V + R) - (beta * S * I) / (S + I + P + V + R) + w * V - mu * S
+    dI <- (beta * S * I) / (S + I + P + V + R) - gama * I * theta - gama * I * (1-theta) - mu * I
+    dP <- gama * I * theta - tau * P - mu * P
+    dR <- gama * I * (1- theta) + tau * P - mu * R
     # return the output of the model
-    return(list(c(dS, dI, dPI, dV, dR)))
+    return(list(c(dS, dI, dP, dV, dR)))
   })
 }
 
@@ -291,22 +297,19 @@ times <- seq(1, tf, by = Dt)
 # Simulation ----
 modSIRVsd <- ode(y = init.sd, times = times, func = SIRVsd, parms = par.SIRVsd, method = "ode45")
 modSIRVsd <- as.data.frame(modSIRVsd)
-modSIRVsd$N <- (modSIRVsd$S + modSIRVsd$I + modSIRVsd$PI + modSIRVsd$V + modSIRVsd$R)
+modSIRVsd$N <- (modSIRVsd$S + modSIRVsd$I + modSIRVsd$P + modSIRVsd$V + modSIRVsd$R)
 modSIRVsd$month <- coverage$mes
 
-# Simulation Dynamics
+# Coverage simulated
+modSIRVsd$simCov <- modSIRVsd$V/modSIRVsd$N
 
+# Simulation Dynamics
 # Add the cases to the simulation
 modSIRVsd$cases <- afected$afectados[match(ymd(modSIRVsd$month), afected$Month)]
 
 # FIG 3 ###ggplot#####
-library(ggplot2)
-library(lubridate)
-
-cbPalette <- c("red", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")
-
 ggplot(modSIRVsd, aes(floor_date(ymd(month), unit = "month"))) +
-  geom_line(aes(y = PI, colour = "P.Infected"), size = 1) +
+  geom_line(aes(y = P, colour = "P.Infected"), size = 1) +
   geom_line(aes(y = V, colour = "Vaccined"), size = 1) +
   geom_line(aes(y = S, colour = "susceptible"), size = 1) +
   geom_line(aes(y = I, colour = "Infected"), size = 1) +
@@ -323,7 +326,7 @@ ggplot(modSIRVsd, aes(floor_date(ymd(month), unit = "month"))) +
 # write.csv(modSIRVsd, file = "modsirv.csv")
 
 ggplot(modSIRVsd, aes(floor_date(ymd(month), unit = "month"))) +
-  geom_line(aes(y = PI, colour = "Persistent I"), size = 1.2) +
+  geom_line(aes(y = P, colour = "Persistent I"), size = 1.2) +
   geom_line(aes(y = V, colour = "Vaccined"), size = 1.2) +
   geom_line(aes(y = S, colour = "susceptible"), size = 1.2) +
   geom_line(aes(y = I, colour = "Infected"), size = 1.2) +
