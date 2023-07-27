@@ -6,11 +6,11 @@ The model used oficial information not able to make public.
 Reports are available on the link and the RMD files
 
 ### Contact and death rates (Contact-death)
-Code to calculate de beta and gamma epidemic of 2015
+Code to calculate beta and gamma rates from epidemic data of 2015
 
 ### Modelling simulation 2014-2022 (Sim14-22)
 Simulation using the coverage dynamics (montly basis)
-the modell is runing with the number of animals as init.cond
+The modell is runing with the number of animals as init.cond
 
 ### Model simulation 2022-2031 (Sim22-32)
 Simulation of future population dynamics
