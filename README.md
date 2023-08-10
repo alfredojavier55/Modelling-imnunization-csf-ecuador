@@ -15,8 +15,8 @@ The modell is runing with the number of animals as init.cond
 ### Model simulation 2022-2031 (Sim22-32)
 Simulation of future population dynamics
 
-### Sensibility analysis (Sensibility)
-We used the 2014-2022 model to fix parameters and obtain 100 simulations of Monte Carlo simulation, then PRCC
+### Sensitivity analysis
+We used the 2014-2022 model to fix parameters and obtain 1000 simulations of Monte Carlo simulation, then PRCC
 
 ### Authors
 [![orcid](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png)](https://orcid.org/0000-0002-9160-7355) Fernando Ferreira,
